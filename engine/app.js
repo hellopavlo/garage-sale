@@ -797,120 +797,102 @@
     };
   }
 
-  /* ---------- lightbox (fullscreen gallery) ---------- */
+  /* ---------- detail overlay (card modal + photo carousel) ---------- */
 
   function createLightbox() {
     var root = document.createElement("div");
     root.className = "lb"; root.hidden = true;
     root.innerHTML =
       '<div class="lb-backdrop"></div>' +
-      '<button class="lb-close" type="button" aria-label="Close (Esc)">&#10005;</button>' +
-      '<button class="lb-nav lb-prev" type="button" aria-label="Previous">&#8249;</button>' +
-      '<div class="lb-stage"><img class="lb-img" alt="" draggable="false" /></div>' +
-      '<button class="lb-nav lb-next" type="button" aria-label="Next">&#8250;</button>' +
-      '<div class="lb-bar">' +
-        '<div class="lb-bar-head"><span class="lb-caption"></span><span class="lb-counter"></span></div>' +
-        '<div class="lb-meta"></div>' +
-        '<p class="lb-desc"></p>' +
-      '</div>' +
-      '<div class="lb-thumbs"></div>';
+      '<div class="lb-card" role="dialog" aria-modal="true" aria-label="Item details">' +
+        '<button class="lb-close" type="button" aria-label="Close (Esc)"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+        '<div class="lb-media">' +
+          '<img class="lb-img" alt="" />' +
+          '<button class="lb-nav lb-prev" type="button" aria-label="Previous photo"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg></button>' +
+          '<button class="lb-nav lb-next" type="button" aria-label="Next photo"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>' +
+          '<span class="lb-counter"></span>' +
+        '</div>' +
+        '<div class="lb-info">' +
+          '<h2 class="lb-caption"></h2>' +
+          '<div class="lb-meta"></div>' +
+          '<p class="lb-desc"></p>' +
+        '</div>' +
+      '</div>';
     document.body.appendChild(root);
 
-    var stage = root.querySelector(".lb-stage");
+    var media = root.querySelector(".lb-media");
     var img = root.querySelector(".lb-img");
     var caption = root.querySelector(".lb-caption");
     var counter = root.querySelector(".lb-counter");
     var meta = root.querySelector(".lb-meta");
     var desc = root.querySelector(".lb-desc");
-    var thumbs = root.querySelector(".lb-thumbs");
     var prevBtn = root.querySelector(".lb-prev");
     var nextBtn = root.querySelector(".lb-next");
     var closeBtn = root.querySelector(".lb-close");
     var backdrop = root.querySelector(".lb-backdrop");
+    var card = root.querySelector(".lb-card");
+    var info = root.querySelector(".lb-info");
 
-    var cur = { item: null, index: 0 };
-    var zoom = false, tx = 0, ty = 0, lastFocus = null;
+    var cur = { item: null, index: 0 }, lastFocus = null;
 
     function open(item, index) {
       cur.item = item; cur.index = index || 0; lastFocus = document.activeElement;
-      buildThumbs(); show(); root.hidden = false;
+      show(); root.hidden = false;
       document.body.classList.add("lb-open"); closeBtn.focus();
     }
     function close() {
       root.hidden = true; document.body.classList.remove("lb-open");
-      img.removeAttribute("src"); resetZoom();
+      img.removeAttribute("src");
       if (lastFocus && lastFocus.focus) lastFocus.focus();
     }
     function detailMeta(item) {
-      var html = '<span class="lb-price">' + priceHTML(item) + "</span>";
+      var html = '<span class="card-price">' + priceHTML(item) + "</span>";
       if (item.condition) html += '<span class="card-condition ' + conditionClass(item.condition) + '">' + escapeHTML(item.condition) + "</span>";
       return html;
     }
+    // Size the card to the photo's aspect ratio so it fills the modal without
+    // cropping or large empty margins.
+    function fitCard() {
+      card.style.width = ""; media.style.height = "";
+      if (!cur.item || !cur.item.photos.length || !img.naturalWidth) return;
+      var maxW = Math.min(0.94 * window.innerWidth, 1100);
+      var infoH = Math.min(info.offsetHeight, Math.round(0.42 * window.innerHeight));
+      var mediaMaxH = 0.94 * window.innerHeight - infoH;
+      var aspect = img.naturalWidth / img.naturalHeight;
+      var w = maxW, h = Math.round(w / aspect);
+      if (h > mediaMaxH) { h = Math.round(mediaMaxH); w = Math.round(h * aspect); }
+      card.style.width = w + "px";
+      media.style.height = h + "px";
+    }
     function show() {
-      var item = cur.item, photos = item.photos, hasPhotos = photos.length > 0;
-      root.classList.toggle("lb--text", !hasPhotos);
+      var item = cur.item, photos = item.photos, multi = photos.length > 1;
+      root.classList.toggle("lb--media", photos.length > 0);
+      media.hidden = photos.length === 0;
+      card.style.width = ""; media.style.height = "";
       caption.textContent = item.name;
       meta.innerHTML = detailMeta(item);
       desc.textContent = item.description || "";
       desc.hidden = !item.description;
-      if (hasPhotos) {
+      prevBtn.hidden = !multi; nextBtn.hidden = !multi; counter.hidden = !multi;
+      if (photos.length) {
         var name = photos[cur.index];
-        resetZoom();
-        img.src = WEB_DIR + name;
+        img.onload = fitCard;
         img.onerror = function () { img.onerror = null; img.src = IMG_BASE + name; };
+        img.src = WEB_DIR + name;
         img.alt = item.name + " — photo " + (cur.index + 1) + " of " + photos.length;
         counter.textContent = (cur.index + 1) + " / " + photos.length;
-        var multi = photos.length > 1;
-        prevBtn.hidden = !multi; nextBtn.hidden = !multi; thumbs.hidden = !multi;
-        Array.prototype.forEach.call(thumbs.children, function (t, i) { t.classList.toggle("is-active", i === cur.index); });
+        if (img.complete && img.naturalWidth) fitCard();
         preload(cur.index + 1); preload(cur.index - 1);
-      } else {
-        img.removeAttribute("src");
-        counter.textContent = "";
-        prevBtn.hidden = true; nextBtn.hidden = true; thumbs.hidden = true;
       }
     }
     function preload(i) { var photos = cur.item.photos; if (i < 0 || i >= photos.length) return; var p = new Image(); p.src = WEB_DIR + photos[i]; }
     function go(delta) { var n = cur.item.photos.length; if (!n) return; cur.index = (cur.index + delta + n) % n; show(); }
-    function gotoIndex(i) { cur.index = i; show(); }
-    function buildThumbs() {
-      thumbs.innerHTML = "";
-      cur.item.photos.forEach(function (name, i) {
-        var b = document.createElement("button"); b.type = "button"; b.className = "lb-thumb";
-        b.setAttribute("aria-label", "Photo " + (i + 1));
-        var t = document.createElement("img"); t.loading = "lazy"; t.alt = ""; t.src = THUMB_DIR + name;
-        t.onerror = function () { t.onerror = null; t.src = IMG_BASE + name; };
-        b.appendChild(t); b.addEventListener("click", function () { gotoIndex(i); });
-        thumbs.appendChild(b);
-      });
-    }
-    function resetZoom() { zoom = false; tx = 0; ty = 0; img.classList.remove("is-zoomed"); img.style.transform = ""; }
-    function applyTransform() { img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + (zoom ? 2 : 1) + ")"; }
-    function clampPan() { var r = stage.getBoundingClientRect(), mx = r.width / 2, my = r.height / 2; tx = Math.max(-mx, Math.min(mx, tx)); ty = Math.max(-my, Math.min(my, ty)); }
-    function toggleZoom() { zoom = !zoom; tx = 0; ty = 0; img.classList.toggle("is-zoomed", zoom); applyTransform(); }
 
-    var down = null;
-    stage.addEventListener("pointerdown", function (e) { down = { x: e.clientX, y: e.clientY, tx: tx, ty: ty, t: Date.now(), moved: false }; stage.setPointerCapture(e.pointerId); });
-    stage.addEventListener("pointermove", function (e) {
-      if (!down) return;
-      var dx = e.clientX - down.x, dy = e.clientY - down.y;
-      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) down.moved = true;
-      if (zoom) { tx = down.tx + dx; ty = down.ty + dy; clampPan(); applyTransform(); }
-    });
-    stage.addEventListener("pointerup", function (e) {
-      if (!down) return;
-      var dx = e.clientX - down.x, dy = e.clientY - down.y;
-      if (!zoom && down.moved) {
-        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
-        else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close();
-      }
-      down = null;
-    });
-    img.addEventListener("dblclick", function (e) { e.preventDefault(); toggleZoom(); });
     prevBtn.addEventListener("click", function () { go(-1); });
     nextBtn.addEventListener("click", function () { go(1); });
     closeBtn.addEventListener("click", close);
     backdrop.addEventListener("click", close);
+    window.addEventListener("resize", function () { if (!root.hidden) fitCard(); });
     document.addEventListener("keydown", function (e) {
       if (root.hidden) return;
       if (e.key === "Escape") close();
