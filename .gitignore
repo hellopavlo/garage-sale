@@ -1,0 +1,11 @@
+# OS / editor files (shouldn't be committed or deployed)
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+
+# Leftover / non-site files
+index.php
+
+# Local-only tools — never published (public repo)
+tools/

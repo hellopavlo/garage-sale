@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Garage Sale</title>
+  <!-- Engine: generic, reusable across sales -->
+  <link rel="stylesheet" href="engine/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1 id="sale-title">Garage Sale</h1>
+      <p id="sale-subtitle" class="subtitle"></p>
+      <p id="sale-contact" class="contact"></p>
+    </div>
+  </header>
+
+  <div class="controls-bar">
+    <div class="wrap toolbar">
+      <input id="search" class="search" type="search" placeholder="Search items…" autocomplete="off" aria-label="Search items" />
+
+      <div class="cat-select">
+        <button id="cat-toggle" class="cat-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="cat-menu">
+          <span class="cat-btn-label">Categories</span>
+          <span id="cat-count" class="cat-btn-count" hidden></span>
+          <span class="cat-caret" aria-hidden="true"></span>
+        </button>
+        <div id="cat-menu" class="cat-menu" role="dialog" aria-label="Filter by category" hidden>
+          <div class="cat-menu-head">
+            <span class="cat-menu-title">Categories</span>
+            <button id="cat-clear" type="button" class="cat-menu-clear">Clear</button>
+          </div>
+          <div id="cat-list" class="cat-list" role="group" aria-label="Categories"></div>
+        </div>
+      </div>
+
+      <select id="sort" class="sort" aria-label="Sort items">
+        <option value="price-desc">Price: high to low</option>
+        <option value="price-asc">Price: low to high</option>
+        <option value="name-asc">Name: A–Z</option>
+      </select>
+
+      <label class="toggle">
+        <input type="checkbox" id="show-hidden" />
+        <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+        <span class="toggle-label">Reserved &amp; sold</span>
+      </label>
+    </div>
+
+    <div class="wrap active-filters" id="active-filters" hidden></div>
+  </div>
+  <div class="cat-backdrop" id="cat-backdrop" hidden></div>
+
+  <p id="result-count" class="wrap result-count" aria-live="polite"></p>
+  <main id="grid" class="wrap grid" aria-live="polite"></main>
+  <nav id="pager" class="wrap pager" aria-label="Pagination"></nav>
+
+  <!-- Engine: generic, reusable across sales -->
+  <script src="engine/app.js"></script>
+</body>
+</html>
