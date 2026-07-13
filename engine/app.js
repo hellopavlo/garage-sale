@@ -86,10 +86,10 @@
 
   function loadItemsCSV(cfg) {
     var sheetUrl = sheetCsvUrl(cfg);
-    if (!sheetUrl) return fetchText(DATA_DIR + "items.csv");
+    if (!sheetUrl) return Promise.reject(new Error("No item data source is configured."));
     return fetchText(sheetUrl).then(function (txt) {
       if (!looksLikeCsv(txt)) {
-        throw new Error("The Google Sheet didn't return data. Make sure it is shared “Anyone with the link can view” and the tab name is correct.");
+        throw new Error("Couldn't load the sale data. Please try again in a moment.");
       }
       return txt;
     });
