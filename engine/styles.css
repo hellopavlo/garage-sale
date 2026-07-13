@@ -297,10 +297,20 @@ button.card-media:hover img { transform: scale(1.03); }
 .card-condition.cond-good     { background: #f1f5f9; color: #334155; } /* fine = neutral */
 .card-condition.cond-fair     { background: #fef3c7; color: #92400e; } /* caution = amber */
 .card-condition.cond-forparts { background: #fee2e2; color: #991b1b; } /* defect = red */
+.card-descwrap { display: flex; flex-direction: column; gap: 2px; }
 .card-desc {
   margin: 0; font-size: 14px; line-height: 1.5; color: #52555c;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+.card-more {
+  align-self: flex-start;
+  padding: 0; border: 0; background: none;
+  color: var(--accent);
+  font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  display: none;
+}
+.card.is-clamped .card-more { display: inline; }
 
 /* Add-to-reserve-list button on cards */
 .cart-add {
@@ -454,14 +464,38 @@ body.lb-open { overflow: hidden; }
   grid-row: 2;
   z-index: 2;
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
   padding: 12px 20px 6px;
   color: #f2f2f2;
 }
+.lb-bar-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
 .lb-caption { font-size: 1rem; font-weight: 600; }
 .lb-counter { font-size: .88rem; color: #b9b9bd; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lb-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lb-price { font-size: 1rem; font-weight: 700; color: #fff; }
+.lb-meta .card-full { color: #b9b9bd; }
+.lb-desc {
+  margin: 0;
+  font-size: .95rem; line-height: 1.55; color: #e6e6e9;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  max-height: 26vh;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+.lb-desc[hidden] { display: none; }
+.lb--text { grid-template-rows: 1fr; }
+.lb--text .lb-stage,
+.lb--text .lb-prev,
+.lb--text .lb-next,
+.lb--text .lb-thumbs,
+.lb--text .lb-counter { display: none; }
+.lb--text .lb-bar { grid-row: 1; align-self: center; max-height: 84vh; }
+.lb--text .lb-desc { max-height: 66vh; }
 .lb-thumbs {
   grid-column: 1 / -1;
   grid-row: 3;

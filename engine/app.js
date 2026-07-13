@@ -281,6 +281,10 @@
     els.catClear.addEventListener("click", clearCategories);
     els.catBackdrop.addEventListener("click", closeCatMenu);
     window.addEventListener("popstate", onPopState);
+    var clampT;
+    window.addEventListener("resize", function () {
+      clearTimeout(clampT); clampT = setTimeout(markClamped, 150);
+    });
   }
 
   /* ---------- URL state (shareable filtered views + cart) ---------- */
@@ -420,7 +424,16 @@
 
     updateCategoryUI();
     renderPager(totalPages);
+    markClamped();
     writeURL(nav);
+  }
+
+  // "Read more" only shows when the 2-line description is actually truncated.
+  function markClamped() {
+    Array.prototype.forEach.call(els.grid.querySelectorAll(".card"), function (cardEl) {
+      var d = cardEl.querySelector(".card-desc");
+      if (d) cardEl.classList.toggle("is-clamped", d.scrollHeight > d.clientHeight + 1);
+    });
   }
 
   function updateCategoryCounts(base) {
@@ -533,9 +546,15 @@
         "</div>" +
       "</div>" +
       (it.quantity && it.quantity > 1 ? '<div class="card-qty">' + it.quantity + " available</div>" : "") +
-      (it.description ? '<p class="card-desc">' + escapeHTML(it.description) + "</p>" : "");
+      (it.description
+        ? '<div class="card-descwrap"><p class="card-desc">' + escapeHTML(it.description) +
+          '</p><button type="button" class="card-more">Read more</button></div>'
+        : "");
     body.appendChild(content);
 
+    if (it.description) {
+      content.querySelector(".card-more").addEventListener("click", function () { lb.open(it, 0); });
+    }
     if (!isHidden(it)) body.appendChild(cartButton(it));
     el.appendChild(body);
     return el;
@@ -789,7 +808,11 @@
       '<button class="lb-nav lb-prev" type="button" aria-label="Previous">&#8249;</button>' +
       '<div class="lb-stage"><img class="lb-img" alt="" draggable="false" /></div>' +
       '<button class="lb-nav lb-next" type="button" aria-label="Next">&#8250;</button>' +
-      '<div class="lb-bar"><span class="lb-caption"></span><span class="lb-counter"></span></div>' +
+      '<div class="lb-bar">' +
+        '<div class="lb-bar-head"><span class="lb-caption"></span><span class="lb-counter"></span></div>' +
+        '<div class="lb-meta"></div>' +
+        '<p class="lb-desc"></p>' +
+      '</div>' +
       '<div class="lb-thumbs"></div>';
     document.body.appendChild(root);
 
@@ -797,6 +820,8 @@
     var img = root.querySelector(".lb-img");
     var caption = root.querySelector(".lb-caption");
     var counter = root.querySelector(".lb-counter");
+    var meta = root.querySelector(".lb-meta");
+    var desc = root.querySelector(".lb-desc");
     var thumbs = root.querySelector(".lb-thumbs");
     var prevBtn = root.querySelector(".lb-prev");
     var nextBtn = root.querySelector(".lb-next");
@@ -807,7 +832,6 @@
     var zoom = false, tx = 0, ty = 0, lastFocus = null;
 
     function open(item, index) {
-      if (!item.photos.length) return;
       cur.item = item; cur.index = index || 0; lastFocus = document.activeElement;
       buildThumbs(); show(); root.hidden = false;
       document.body.classList.add("lb-open"); closeBtn.focus();
@@ -817,21 +841,37 @@
       img.removeAttribute("src"); resetZoom();
       if (lastFocus && lastFocus.focus) lastFocus.focus();
     }
+    function detailMeta(item) {
+      var html = '<span class="lb-price">' + priceHTML(item) + "</span>";
+      if (item.condition) html += '<span class="card-condition ' + conditionClass(item.condition) + '">' + escapeHTML(item.condition) + "</span>";
+      return html;
+    }
     function show() {
-      var photos = cur.item.photos, name = photos[cur.index];
-      resetZoom();
-      img.src = WEB_DIR + name;
-      img.onerror = function () { img.onerror = null; img.src = IMG_BASE + name; };
-      img.alt = cur.item.name + " — photo " + (cur.index + 1) + " of " + photos.length;
-      caption.textContent = cur.item.name;
-      counter.textContent = (cur.index + 1) + " / " + photos.length;
-      var multi = photos.length > 1;
-      prevBtn.hidden = !multi; nextBtn.hidden = !multi; thumbs.hidden = !multi;
-      Array.prototype.forEach.call(thumbs.children, function (t, i) { t.classList.toggle("is-active", i === cur.index); });
-      preload(cur.index + 1); preload(cur.index - 1);
+      var item = cur.item, photos = item.photos, hasPhotos = photos.length > 0;
+      root.classList.toggle("lb--text", !hasPhotos);
+      caption.textContent = item.name;
+      meta.innerHTML = detailMeta(item);
+      desc.textContent = item.description || "";
+      desc.hidden = !item.description;
+      if (hasPhotos) {
+        var name = photos[cur.index];
+        resetZoom();
+        img.src = WEB_DIR + name;
+        img.onerror = function () { img.onerror = null; img.src = IMG_BASE + name; };
+        img.alt = item.name + " — photo " + (cur.index + 1) + " of " + photos.length;
+        counter.textContent = (cur.index + 1) + " / " + photos.length;
+        var multi = photos.length > 1;
+        prevBtn.hidden = !multi; nextBtn.hidden = !multi; thumbs.hidden = !multi;
+        Array.prototype.forEach.call(thumbs.children, function (t, i) { t.classList.toggle("is-active", i === cur.index); });
+        preload(cur.index + 1); preload(cur.index - 1);
+      } else {
+        img.removeAttribute("src");
+        counter.textContent = "";
+        prevBtn.hidden = true; nextBtn.hidden = true; thumbs.hidden = true;
+      }
     }
     function preload(i) { var photos = cur.item.photos; if (i < 0 || i >= photos.length) return; var p = new Image(); p.src = WEB_DIR + photos[i]; }
-    function go(delta) { var n = cur.item.photos.length; cur.index = (cur.index + delta + n) % n; show(); }
+    function go(delta) { var n = cur.item.photos.length; if (!n) return; cur.index = (cur.index + delta + n) % n; show(); }
     function gotoIndex(i) { cur.index = i; show(); }
     function buildThumbs() {
       thumbs.innerHTML = "";
