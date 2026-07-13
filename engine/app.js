@@ -26,6 +26,7 @@
   var lb = null;   // lightbox controller
   var cart = null; // reserve-list controller
   var booted = false;
+  var editingSearch = false; // true while consecutive search keystrokes coalesce into one history entry
 
   document.addEventListener("DOMContentLoaded", boot);
 
@@ -216,7 +217,7 @@
     if (on) state.activeCategories.add(name);
     else state.activeCategories.delete(name);
     state.page = 1;
-    render();
+    render("push");
   }
 
   function syncCategoryChecks() {
@@ -229,13 +230,13 @@
     state.activeCategories.clear();
     syncCategoryChecks();
     state.page = 1;
-    render();
+    render("push");
   }
 
   function clearAllFilters() {
     state.query = ""; els.search.value = "";
     state.activeCategories.clear(); syncCategoryChecks();
-    state.page = 1; render();
+    state.page = 1; render("push");
   }
 
   /* category dropdown open / close */
@@ -262,41 +263,74 @@
 
   function bindEvents() {
     els.search.addEventListener("input", function () {
-      state.query = els.search.value.toLowerCase().trim(); state.page = 1; render();
+      var prevQuery = state.query;
+      state.query = els.search.value.toLowerCase().trim();
+      if (state.query === prevQuery) return;
+      state.page = 1;
+      render(editingSearch ? "replace" : "push");
+      editingSearch = true;
     });
     els.sort.addEventListener("change", function () {
-      state.sort = els.sort.value; state.page = 1; render();
+      state.sort = els.sort.value; state.page = 1; render("push");
     });
     els.showHidden.addEventListener("change", function () {
       state.view = els.showHidden.checked ? "hidden" : "available";
-      state.page = 1; render();
+      state.page = 1; render("push");
     });
     els.catToggle.addEventListener("click", toggleCatMenu);
     els.catClear.addEventListener("click", clearCategories);
     els.catBackdrop.addEventListener("click", closeCatMenu);
+    window.addEventListener("popstate", onPopState);
   }
 
   /* ---------- URL state (shareable filtered views + cart) ---------- */
 
-  function readURL() {
-    var p;
-    try { p = new URLSearchParams(location.search); } catch (e) { return false; }
+  function paramsFromURL() {
+    try { return new URLSearchParams(location.search); } catch (e) { return null; }
+  }
+
+  // Reset to defaults first so a back/forward to a sparser URL clears the params
+  // that are absent from it, rather than leaving stale filters in place.
+  function syncFiltersFromURL(p) {
+    state.query = "";
+    state.view = "available";
+    state.sort = DEFAULT_SORT;
+    state.activeCategories.clear();
+    state.page = 1;
+
     var q = p.get("q");
-    if (q) { state.query = q.toLowerCase(); els.search.value = q; }
-    var v = p.get("v");
-    if (v === "hidden") { state.view = "hidden"; els.showHidden.checked = true; }
+    els.search.value = q || "";
+    if (q) state.query = q.toLowerCase();
+
+    if (p.get("v") === "hidden") state.view = "hidden";
+    els.showHidden.checked = state.view === "hidden";
+
     var s = p.get("s");
-    if (s) { state.sort = s; els.sort.value = s; }
+    if (s) state.sort = s;
+    els.sort.value = state.sort;
+
     var c = p.get("c");
-    if (c) {
-      c.split(",").forEach(function (name) { if (name) state.activeCategories.add(name); });
-      syncCategoryChecks();
-    }
+    if (c) c.split(",").forEach(function (name) { if (name) state.activeCategories.add(name); });
+    syncCategoryChecks();
+
     var pg = parseInt(p.get("p"), 10);
     if (!isNaN(pg) && pg > 0) state.page = pg;
+  }
+
+  function readURL() {
+    var p = paramsFromURL();
+    if (!p) return false;
+    syncFiltersFromURL(p);
     var cartParam = p.get("cart");
-    if (cartParam != null) { cart.setFromIds(cartParam.split(",").filter(Boolean)); }
+    if (cartParam != null) cart.setFromIds(cartParam.split(",").filter(Boolean));
     return cartParam != null;
+  }
+
+  function onPopState() {
+    var p = paramsFromURL();
+    if (!p) return;
+    syncFiltersFromURL(p);
+    render("none");
   }
 
   function currentParams() {
@@ -310,12 +344,13 @@
     return p;
   }
 
-  function writeURL() {
-    if (!booted) return;
+  function writeURL(nav) {
+    if (!booted || nav === "none") return;
     try {
       var qs = currentParams().toString();
       var url = location.pathname + (qs ? "?" + qs : "") + location.hash;
-      history.replaceState(null, "", url);
+      if (nav === "push") history.pushState(null, "", url);
+      else history.replaceState(null, "", url);
     } catch (e) { /* file:// or unsupported — ignore */ }
   }
 
@@ -353,7 +388,8 @@
 
   /* ---------- rendering ---------- */
 
-  function render() {
+  function render(nav) {
+    editingSearch = false;
     var base = baseItems();
     updateCategoryCounts(base);
 
@@ -384,7 +420,7 @@
 
     updateCategoryUI();
     renderPager(totalPages);
-    writeURL();
+    writeURL(nav);
   }
 
   function updateCategoryCounts(base) {
@@ -417,7 +453,7 @@
       chip.setAttribute("aria-label", "Remove filter: " + name);
       chip.innerHTML = escapeHTML(name) + ' <span class="afilter-x" aria-hidden="true">×</span>';
       chip.addEventListener("click", function () {
-        state.activeCategories.delete(name); syncCategoryChecks(); state.page = 1; render();
+        state.activeCategories.delete(name); syncCategoryChecks(); state.page = 1; render("push");
       });
       els.activeFilters.appendChild(chip);
     });
@@ -456,7 +492,7 @@
   }
 
   function goToPage(p) {
-    state.page = p; render();
+    state.page = p; render("push");
     var bar = document.querySelector(".controls-bar");
     var barH = bar ? bar.getBoundingClientRect().height : 0;
     var top = els.count.getBoundingClientRect().top + window.pageYOffset - barH - 8;
