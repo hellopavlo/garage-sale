@@ -611,6 +611,6 @@ body.cartp-open { overflow: hidden; }
   .cart-pill-label { display: none; }
 }
 @media (max-width: 480px) {
-  .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .grid { grid-template-columns: 1fr; gap: 14px; }
   .site-header { padding: 24px 0 20px; }
 }
