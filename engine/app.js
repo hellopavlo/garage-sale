@@ -870,8 +870,10 @@
       var item = cur.item, photos = item.photos, multi = photos.length > 1;
       root.classList.toggle("lb--media", photos.length > 0);
       media.hidden = photos.length === 0;
-      card.style.width = ""; media.style.height = "";
       resetZoom();
+      // Keep the media box sized during photo-to-photo navigation (fitCard
+      // recomputes on load); only collapse it for photoless items.
+      if (!photos.length) { card.style.width = ""; media.style.height = ""; }
       caption.textContent = item.name;
       meta.innerHTML = detailMeta(item);
       desc.textContent = item.description || "";
