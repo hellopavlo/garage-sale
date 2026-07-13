@@ -1,7 +1,4 @@
-/*
- * Garage Sale engine styles — generic, reusable.
- * Theme knobs live in :root so a sale can override colors from its own CSS if wanted.
- */
+/* Garage Sale engine styles — generic, reusable. */
 :root {
   --bg: #f7f7f5;
   --surface: #ffffff;
@@ -293,9 +290,7 @@ button.card-media:hover img { transform: scale(1.03); }
 /* quantity = plain muted text (self-describing via the "available" unit) */
 .card-qty { font-size: 13px; line-height: 1.4; color: var(--muted); }
 
-/* condition = color-coded status chip. Label always present (never color alone);
-   tints are accessible (>=4.5:1 text-on-tint) and avoid green so it can't be
-   confused with the green brand/CTA. */
+/* condition = color-coded status chip */
 .card-condition {
   flex: none;
   display: inline-flex; align-items: center;
@@ -599,8 +594,6 @@ body.cartp-open { overflow: hidden; }
 
 @media (max-width: 560px) {
   .toolbar .search { flex-basis: 100%; }
-  /* remove backdrop-filter so it doesn't become the containing block for the
-     fixed bottom sheet (which would anchor it to the bar, not the viewport) */
   .controls-bar { backdrop-filter: none; }
   /* category dropdown becomes a bottom sheet */
   .cat-select { position: static; }

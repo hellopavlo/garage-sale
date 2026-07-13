@@ -1,22 +1,4 @@
-/*
- * Garage Sale engine — generic and reusable.
- * Reads sale-specific content from ../data/config.json and ../data/items.csv.
- * Nothing sale-specific should live in this file.
- *
- * Item statuses: "available" (default), "reserved", "sold".
- *   - The "Show reserved & sold" toggle SWITCHES the whole view to only
- *     reserved + sold items (available ones are hidden). Search, category
- *     filters, sort and pagination all apply within the current view.
- *   - Default sort is price high-to-low; blank prices sort last.
- *
- * Shareable state: the current search / categories / sort / page / view live in
- * the URL query string, so any filtered view can be copied and shared.
- *
- * Reserve list ("cart"): stateless — it lives ONLY as an array of item ids in
- * the URL (?cart=1,5,9). No localStorage, no backend. The link is the list;
- * shoppers copy it or open a pre-filled email to the seller to request a hold.
- * This mirrors the Shopify "cart permalink" model.
- */
+/* Garage Sale engine — generic and reusable. */
 (function () {
   "use strict";
 
@@ -80,8 +62,6 @@
       .catch(function (err) { showError(err, false); });
   }
 
-  // Fetch the item data and render. On failure, show an error with a Retry
-  // button — there is intentionally no silent fallback to stale data.
   function loadData() {
     showLoading();
     loadItemsCSV(state.config)
@@ -104,10 +84,6 @@
       .catch(function (err) { showError(err, true); });
   }
 
-  // Data source: a published Google Sheet (live) if configured, else the
-  // bundled data/items.csv. When a Sheet IS configured it is the sole source —
-  // no fallback — so the visitor sees a loader until the Sheet responds and a
-  // clear error (with Retry) if it cannot be reached.
   function loadItemsCSV(cfg) {
     var sheetUrl = sheetCsvUrl(cfg);
     if (!sheetUrl) return fetchText(DATA_DIR + "items.csv");
@@ -119,8 +95,6 @@
     });
   }
 
-  // Builds the CORS-friendly gviz CSV endpoint for a Google Sheet.
-  // Note: this endpoint works cross-origin; the "Publish to web" CSV URL does not.
   function sheetCsvUrl(cfg) {
     var s = cfg.sheet || {};
     var id = s.id || cfg.sheetId;
@@ -190,7 +164,6 @@
     var photos = raw_imgs.split("|").map(function (s) { return s.trim(); }).filter(Boolean);
     var qn = parseInt((raw.quantity || "").replace(/[^0-9]/g, ""), 10);
     return {
-      // strip a stray leading "$" in case a sheet cell was currency-formatted
       id: (raw.id || String(i)).replace(/^\$/, "").trim(),
       name: raw.name || "Untitled item",
       category: raw.category || "Misc",
@@ -271,7 +244,6 @@
     els.catBackdrop.hidden = false;
     els.catToggle.setAttribute("aria-expanded", "true");
     document.addEventListener("keydown", onCatKeydown);
-    // defer so the opening click doesn't immediately close it
     setTimeout(function () { document.addEventListener("click", onDocClickForCat, true); }, 0);
   }
   function closeCatMenu() {
@@ -369,7 +341,6 @@
   function sortItems(list) {
     var s = state.sort;
     if (s === "name-asc") return list.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
-    // price sort — default is high-to-low; items without a price go last
     var dir = s === "price-asc" ? 1 : -1;
     return list.slice().sort(function (a, b) {
       var av = a.priceNum, bv = b.priceNum;
@@ -486,7 +457,6 @@
 
   function goToPage(p) {
     state.page = p; render();
-    // land just below the sticky controls bar (whatever its current height is)
     var bar = document.querySelector(".controls-bar");
     var barH = bar ? bar.getBoundingClientRect().height : 0;
     var top = els.count.getBoundingClientRect().top + window.pageYOffset - barH - 8;
@@ -515,11 +485,6 @@
 
     var content = document.createElement("div");
     content.className = "card-content";
-    // Distinct channels so attributes are never confused:
-    //  - category = quiet uppercase eyebrow (self-describing)
-    //  - condition = color-coded status chip beside the price (marketplace convention)
-    //  - quantity = plain "N available" text
-    // Title + description are line-clamped for uniform card heights.
     var condChip = it.condition
       ? '<span class="card-condition ' + conditionClass(it.condition) + '">' + escapeHTML(it.condition) + "</span>"
       : "";
@@ -558,8 +523,6 @@
     b.setAttribute("aria-pressed", inCart ? "true" : "false");
   }
 
-  // Keep every visible card button in sync with the cart (covers panel
-  // actions like "Clear list" and "Remove", not just direct card clicks).
   function syncCartButtons() {
     if (!cart) return;
     Array.prototype.forEach.call(document.querySelectorAll(".cart-add"), syncCartButton);
@@ -621,7 +584,6 @@
     return (state.config.currency || "$") + fmtNum(it.priceNum);
   }
 
-  // actual price, plus a struck-through "full price" when the sheet provides one
   function priceHTML(it) {
     var html = formatPrice(it);
     if (it.fullPriceNum != null && it.fullPriceNum > 0) {
@@ -630,8 +592,6 @@
     return html;
   }
 
-  // Maps a condition value to a color class (neutral-dominant: color only where
-  // it changes the buyer's decision). Falls back to neutral for unknown values.
   function conditionClass(c) {
     var k = (c || "").toLowerCase().trim();
     if (k === "new") return "cond-new";
@@ -708,7 +668,6 @@
       if (!root.hidden) renderPanel();
     }
     function setFromIds(list) {
-      // keep only ids that exist in the catalog, de-duplicated, preserve order
       var seen = {};
       ids = list.map(String).filter(function (id) {
         if (seen[id] || !state.byId[id]) return false; seen[id] = true; return true;
