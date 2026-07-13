@@ -932,13 +932,13 @@
       }
       if (gStart && e.pointerId === gStart.id) {
         if (Math.abs(e.clientX - gStart.x) > 6 || Math.abs(e.clientY - gStart.y) > 6) gStart.moved = true;
-        if (scale > 1) { img.classList.add("is-panning"); tx = gStart.tx + (e.clientX - gStart.x); ty = gStart.ty + (e.clientY - gStart.y); clampPan(); applyTransform(); }
+        if (scale > 1) { media.classList.add("is-panning"); tx = gStart.tx + (e.clientX - gStart.x); ty = gStart.ty + (e.clientY - gStart.y); clampPan(); applyTransform(); }
       }
     });
     media.addEventListener("pointerup", function (e) {
       var endingPinch = pinch && activeIds().length >= 2;
       delete pointers[e.pointerId];
-      img.classList.remove("is-panning");
+      media.classList.remove("is-panning");
       if (endingPinch) {
         pinch = null; gStart = null;
         if (scale <= 1.02) resetZoom();
@@ -956,10 +956,11 @@
         return;
       }
       if (scale > 1) return;
+      if (e.pointerType !== "touch") return;
       if (cur.item.photos.length > 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
       else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close();
     });
-    media.addEventListener("pointercancel", function (e) { delete pointers[e.pointerId]; pinch = null; gStart = null; img.classList.remove("is-panning"); });
+    media.addEventListener("pointercancel", function (e) { delete pointers[e.pointerId]; pinch = null; gStart = null; media.classList.remove("is-panning"); });
     document.addEventListener("keydown", function (e) {
       if (root.hidden) return;
       if (e.key === "Escape") close();

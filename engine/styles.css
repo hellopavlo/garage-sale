@@ -446,7 +446,7 @@ body.lb-open { overflow: hidden; }
 .lb-media[hidden] { display: none; }
 .lb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
 .lb-img.is-zoomed { cursor: zoom-out; }
-.lb-img.is-panning { cursor: grabbing; }
+.lb-media.is-panning, .lb-media.is-panning .lb-img { cursor: grabbing; }
 .lb-nav {
   position: absolute;
   top: 50%;
