@@ -26,6 +26,7 @@
   var WEB_DIR = IMG_BASE + "web/";
   var DEFAULT_PAGE_SIZE = 12;
   var DEFAULT_SORT = "price-desc";
+  var RENDERABLE_STATUSES = ["available", "reserved", "sold"];
 
   var state = {
     config: {},
@@ -85,7 +86,9 @@
     showLoading();
     loadItemsCSV(state.config)
       .then(function (csvText) {
-        state.items = parseCSV(csvText).map(normalizeItem);
+        state.items = parseCSV(csvText).map(normalizeItem).filter(function (it) {
+          return RENDERABLE_STATUSES.indexOf(it.status) !== -1;
+        });
         state.byId = {};
         state.items.forEach(function (it) { state.byId[it.id] = it; });
         buildCategoryMenu();
@@ -181,7 +184,6 @@
     var priceRaw = (raw.price || "").replace(/^\$/, "").trim();
     var num = parseFloat(priceRaw.replace(/[^0-9.]/g, ""));
     var status = (raw.status || "available").toLowerCase();
-    if (["available", "reserved", "sold"].indexOf(status) === -1) status = "available";
     var fullRaw = (raw["full price"] || "").replace(/^\$/, "").trim();
     var fullNum = parseFloat(fullRaw.replace(/[^0-9.]/g, ""));
     var raw_imgs = raw.images != null && raw.images !== "" ? raw.images : (raw.image || "");
