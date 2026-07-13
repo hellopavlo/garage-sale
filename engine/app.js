@@ -834,6 +834,7 @@
     var info = root.querySelector(".lb-info");
 
     var cur = { item: null, index: 0 }, lastFocus = null;
+    var scale = 1, tx = 0, ty = 0, gStart = null, lastTap = 0;
 
     function open(item, index) {
       cur.item = item; cur.index = index || 0; lastFocus = document.activeElement;
@@ -869,6 +870,7 @@
       root.classList.toggle("lb--media", photos.length > 0);
       media.hidden = photos.length === 0;
       card.style.width = ""; media.style.height = "";
+      resetZoom();
       caption.textContent = item.name;
       meta.innerHTML = detailMeta(item);
       desc.textContent = item.description || "";
@@ -894,21 +896,65 @@
     backdrop.addEventListener("click", close);
     window.addEventListener("resize", function () { if (!root.hidden) fitCard(); });
 
-    // Swipe left/right to change photo, swipe down to close.
-    var swipe = null;
+    // Pinch or double-tap to zoom, drag to pan; swipe left/right to change
+    // photo, swipe down to close.
+    function applyTransform() { img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale + ")"; }
+    function resetZoom() { scale = 1; tx = 0; ty = 0; img.style.transform = ""; img.classList.remove("is-zoomed"); }
+    function clampPan() {
+      var r = media.getBoundingClientRect();
+      var maxX = (scale - 1) * r.width / 2, maxY = (scale - 1) * r.height / 2;
+      tx = Math.max(-maxX, Math.min(maxX, tx));
+      ty = Math.max(-maxY, Math.min(maxY, ty));
+    }
+    function toggleZoom() {
+      if (scale > 1) resetZoom();
+      else { scale = 2; tx = 0; ty = 0; img.classList.add("is-zoomed"); applyTransform(); }
+    }
+    var pointers = {}, pinch = null;
+    function activeIds() { return Object.keys(pointers); }
+    function twoFingerDist() { var ids = activeIds(); return Math.hypot(pointers[ids[0]].x - pointers[ids[1]].x, pointers[ids[0]].y - pointers[ids[1]].y); }
     media.addEventListener("pointerdown", function (e) {
       if (e.target.closest("button")) return;
-      swipe = { x: e.clientX, y: e.clientY };
-      media.setPointerCapture(e.pointerId);
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      try { media.setPointerCapture(e.pointerId); } catch (err) {}
+      if (activeIds().length === 2) { pinch = { dist: twoFingerDist(), scale: scale }; gStart = null; }
+      else if (activeIds().length === 1) { gStart = { x: e.clientX, y: e.clientY, tx: tx, ty: ty, id: e.pointerId, moved: false }; }
+    });
+    media.addEventListener("pointermove", function (e) {
+      if (!pointers[e.pointerId]) return;
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      if (pinch && activeIds().length >= 2) {
+        scale = Math.max(1, Math.min(4, pinch.scale * (twoFingerDist() / pinch.dist)));
+        img.classList.toggle("is-zoomed", scale > 1);
+        clampPan(); applyTransform();
+        return;
+      }
+      if (gStart && e.pointerId === gStart.id) {
+        if (Math.abs(e.clientX - gStart.x) > 6 || Math.abs(e.clientY - gStart.y) > 6) gStart.moved = true;
+        if (scale > 1) { tx = gStart.tx + (e.clientX - gStart.x); ty = gStart.ty + (e.clientY - gStart.y); clampPan(); applyTransform(); }
+      }
     });
     media.addEventListener("pointerup", function (e) {
-      if (!swipe) return;
-      var dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
-      swipe = null;
+      var endingPinch = pinch && activeIds().length >= 2;
+      delete pointers[e.pointerId];
+      if (endingPinch) {
+        pinch = null; gStart = null;
+        if (scale <= 1.02) resetZoom();
+        return;
+      }
+      if (!gStart || e.pointerId !== gStart.id) return;
+      var dx = e.clientX - gStart.x, dy = e.clientY - gStart.y, moved = gStart.moved;
+      gStart = null;
+      if (!moved) {
+        var now = Date.now();
+        if (now - lastTap < 300) { lastTap = 0; toggleZoom(); } else lastTap = now;
+        return;
+      }
+      if (scale > 1) return;
       if (cur.item.photos.length > 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
       else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close();
     });
-    media.addEventListener("pointercancel", function () { swipe = null; });
+    media.addEventListener("pointercancel", function (e) { delete pointers[e.pointerId]; pinch = null; gStart = null; });
     document.addEventListener("keydown", function (e) {
       if (root.hidden) return;
       if (e.key === "Escape") close();

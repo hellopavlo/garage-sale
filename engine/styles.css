@@ -444,7 +444,8 @@ body.lb-open { overflow: hidden; }
   touch-action: none;
 }
 .lb-media[hidden] { display: none; }
-.lb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+.lb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
+.lb-img.is-zoomed { cursor: grab; }
 .lb-nav {
   position: absolute;
   top: 50%;
