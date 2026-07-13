@@ -811,6 +811,7 @@
           '<button class="lb-nav lb-prev" type="button" aria-label="Previous photo"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg></button>' +
           '<button class="lb-nav lb-next" type="button" aria-label="Next photo"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>' +
           '<span class="lb-counter"></span>' +
+          '<span class="lb-zoomhint" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>' +
         '</div>' +
         '<div class="lb-info">' +
           '<h2 class="lb-caption"></h2>' +
@@ -931,12 +932,13 @@
       }
       if (gStart && e.pointerId === gStart.id) {
         if (Math.abs(e.clientX - gStart.x) > 6 || Math.abs(e.clientY - gStart.y) > 6) gStart.moved = true;
-        if (scale > 1) { tx = gStart.tx + (e.clientX - gStart.x); ty = gStart.ty + (e.clientY - gStart.y); clampPan(); applyTransform(); }
+        if (scale > 1) { img.classList.add("is-panning"); tx = gStart.tx + (e.clientX - gStart.x); ty = gStart.ty + (e.clientY - gStart.y); clampPan(); applyTransform(); }
       }
     });
     media.addEventListener("pointerup", function (e) {
       var endingPinch = pinch && activeIds().length >= 2;
       delete pointers[e.pointerId];
+      img.classList.remove("is-panning");
       if (endingPinch) {
         pinch = null; gStart = null;
         if (scale <= 1.02) resetZoom();
@@ -946,6 +948,9 @@
       var dx = e.clientX - gStart.x, dy = e.clientY - gStart.y, moved = gStart.moved;
       gStart = null;
       if (!moved) {
+        // Mouse: single click toggles zoom (matches the zoom-in/out cursor).
+        // Touch/pen: double-tap toggles zoom (a single tap must not).
+        if (e.pointerType === "mouse") { toggleZoom(); return; }
         var now = Date.now();
         if (now - lastTap < 300) { lastTap = 0; toggleZoom(); } else lastTap = now;
         return;
@@ -954,7 +959,7 @@
       if (cur.item.photos.length > 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
       else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close();
     });
-    media.addEventListener("pointercancel", function (e) { delete pointers[e.pointerId]; pinch = null; gStart = null; });
+    media.addEventListener("pointercancel", function (e) { delete pointers[e.pointerId]; pinch = null; gStart = null; img.classList.remove("is-panning"); });
     document.addEventListener("keydown", function (e) {
       if (root.hidden) return;
       if (e.key === "Escape") close();
