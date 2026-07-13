@@ -807,7 +807,7 @@
       '<div class="lb-card" role="dialog" aria-modal="true" aria-label="Item details">' +
         '<button class="lb-close" type="button" aria-label="Close (Esc)"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button>' +
         '<div class="lb-media">' +
-          '<img class="lb-img" alt="" />' +
+          '<img class="lb-img" alt="" draggable="false" />' +
           '<button class="lb-nav lb-prev" type="button" aria-label="Previous photo"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg></button>' +
           '<button class="lb-nav lb-next" type="button" aria-label="Next photo"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>' +
           '<span class="lb-counter"></span>' +
@@ -893,6 +893,22 @@
     closeBtn.addEventListener("click", close);
     backdrop.addEventListener("click", close);
     window.addEventListener("resize", function () { if (!root.hidden) fitCard(); });
+
+    // Swipe left/right to change photo, swipe down to close.
+    var swipe = null;
+    media.addEventListener("pointerdown", function (e) {
+      if (e.target.closest("button")) return;
+      swipe = { x: e.clientX, y: e.clientY };
+      media.setPointerCapture(e.pointerId);
+    });
+    media.addEventListener("pointerup", function (e) {
+      if (!swipe) return;
+      var dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+      swipe = null;
+      if (cur.item.photos.length > 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
+      else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close();
+    });
+    media.addEventListener("pointercancel", function () { swipe = null; });
     document.addEventListener("keydown", function (e) {
       if (root.hidden) return;
       if (e.key === "Escape") close();
