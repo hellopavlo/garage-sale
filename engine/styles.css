@@ -271,7 +271,7 @@ button.card-media:hover img { transform: scale(1.03); }
 
 .card-body { padding: 16px; display: flex; flex-direction: column; flex: 1; }
 .card-content { display: flex; flex-direction: column; gap: 12px; flex: 1; }
-/* tight "identity" group: eyebrow -> title -> price sit close together */
+/* tight "identity" group: title -> price sit close together */
 .card-head { display: flex; flex-direction: column; gap: 4px; }
 .card-name {
   margin: 0; font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--ink);
@@ -279,12 +279,6 @@ button.card-media:hover img { transform: scale(1.03); }
 }
 .card-price { font-size: 18px; font-weight: 700; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .card-full { font-weight: 400; font-size: .78em; color: var(--muted); text-decoration: line-through; margin-left: 4px; }
-/* one quiet secondary line: category · condition · N available */
-/* category = quiet uppercase eyebrow (self-describing label) */
-.card-eyebrow {
-  font-size: 11px; font-weight: 600; line-height: 1.33;
-  letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
-}
 /* price + condition share a row: price anchors left, condition chip sits right */
 .card-priceline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 /* quantity = plain muted text (self-describing via the "available" unit) */

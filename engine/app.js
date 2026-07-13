@@ -490,7 +490,6 @@
       : "";
     content.innerHTML =
       '<div class="card-head">' +
-        '<span class="card-eyebrow">' + escapeHTML(it.category) + "</span>" +
         '<h2 class="card-name">' + escapeHTML(it.name) + "</h2>" +
         '<div class="card-priceline">' +
           '<span class="card-price">' + priceHTML(it) + "</span>" +
