@@ -553,7 +553,9 @@
     body.appendChild(content);
 
     if (it.description) {
-      content.querySelector(".card-more").addEventListener("click", function () { lb.open(it, 0); });
+      var more = content.querySelector(".card-more");
+      more.setAttribute("aria-label", "Read more about " + it.name);
+      more.addEventListener("click", function () { lb.open(it, 0); });
     }
     if (!isHidden(it)) body.appendChild(cartButton(it));
     el.appendChild(body);
@@ -584,11 +586,12 @@
 
   function buildMedia(it) {
     var hasPhotos = it.photos.length > 0;
-    var media = document.createElement(hasPhotos ? "button" : "div");
-    media.className = "card-media";
+    var media = document.createElement("button");
+    media.type = "button";
+    media.className = "card-media" + (hasPhotos ? "" : " is-empty");
+    media.setAttribute("aria-label", (hasPhotos ? "View photos of " : "View details of ") + it.name);
+    media.addEventListener("click", function () { lb.open(it, 0); });
     if (hasPhotos) {
-      media.type = "button";
-      media.setAttribute("aria-label", "View photos of " + it.name);
       var first = it.photos[0];
       media.appendChild(imgWithFallback([THUMB_DIR + first, WEB_DIR + first, IMG_BASE + first], it.name, media));
       if (it.photos.length > 1) {
@@ -597,9 +600,7 @@
         pill.innerHTML = cameraIcon() + "<span>" + it.photos.length + "</span>";
         media.appendChild(pill);
       }
-      media.addEventListener("click", function () { lb.open(it, 0); });
     } else {
-      media.classList.add("is-empty");
       media.appendChild(placeholder());
     }
     if (it.status !== "available") {
@@ -806,6 +807,7 @@
       '<div class="lb-backdrop"></div>' +
       '<div class="lb-card" role="dialog" aria-modal="true" aria-label="Item details">' +
         '<button class="lb-close" type="button" aria-label="Close (Esc)"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+        '<div class="lb-scroll">' +
         '<div class="lb-media">' +
           '<img class="lb-img" alt="" draggable="false" />' +
           '<button class="lb-nav lb-prev" type="button" aria-label="Previous photo"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg></button>' +
@@ -817,6 +819,7 @@
           '<h2 class="lb-caption"></h2>' +
           '<div class="lb-meta"></div>' +
           '<p class="lb-desc"></p>' +
+        '</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(root);
@@ -855,16 +858,15 @@
     // Size the card to the photo's aspect ratio so it fills the modal without
     // cropping or large empty margins.
     function fitCard() {
-      card.style.width = ""; media.style.height = "";
+      card.style.width = ""; media.style.aspectRatio = "";
       if (!cur.item || !cur.item.photos.length || !img.naturalWidth) return;
-      var maxW = Math.min(0.94 * window.innerWidth, 1100);
-      var infoH = Math.min(info.offsetHeight, Math.round(0.42 * window.innerHeight));
-      var mediaMaxH = 0.94 * window.innerHeight - infoH;
+      var maxW = Math.min(window.innerWidth - 32, 1100);   // account for .lb padding
+      var maxH = 0.72 * window.innerHeight;                 // leave room for the info below
       var aspect = img.naturalWidth / img.naturalHeight;
-      var w = maxW, h = Math.round(w / aspect);
-      if (h > mediaMaxH) { h = Math.round(mediaMaxH); w = Math.round(h * aspect); }
-      card.style.width = w + "px";
-      media.style.height = h + "px";
+      // width drives the media box; aspect-ratio (exact) sets its height, so the
+      // photo fills it with no sub-pixel letterbox and no crop.
+      card.style.width = Math.round(Math.min(maxW, maxH * aspect)) + "px";
+      media.style.aspectRatio = img.naturalWidth + " / " + img.naturalHeight;
     }
     function show() {
       var item = cur.item, photos = item.photos, multi = photos.length > 1;
@@ -873,7 +875,7 @@
       resetZoom();
       // Keep the media box sized during photo-to-photo navigation (fitCard
       // recomputes on load); only collapse it for photoless items.
-      if (!photos.length) { card.style.width = ""; media.style.height = ""; }
+      if (!photos.length) { card.style.width = ""; media.style.aspectRatio = ""; }
       caption.textContent = item.name;
       meta.innerHTML = detailMeta(item);
       desc.textContent = item.description || "";

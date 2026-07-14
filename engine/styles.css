@@ -230,6 +230,8 @@ body {
   overflow: hidden;
 }
 button.card-media { cursor: zoom-in; }
+button.card-media.is-empty { cursor: pointer; }
+button.card-media.is-empty:hover { background: #e4e4e2; }
 button.card-media:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .card-media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s ease; }
 button.card-media:hover img { transform: scale(1.03); }
@@ -297,20 +299,24 @@ button.card-media:hover img { transform: scale(1.03); }
 .card-condition.cond-good     { background: #f1f5f9; color: #334155; } /* fine = neutral */
 .card-condition.cond-fair     { background: #fef3c7; color: #92400e; } /* caution = amber */
 .card-condition.cond-forparts { background: #fee2e2; color: #991b1b; } /* defect = red */
-.card-descwrap { display: flex; flex-direction: column; gap: 2px; }
+.card-descwrap { display: flex; flex-direction: column; gap: 8px; }
 .card-desc {
   margin: 0; font-size: 14px; line-height: 1.5; color: #52555c;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .card-more {
+  display: none;
   align-self: flex-start;
-  padding: 0; border: 0; background: none;
+  align-items: center;
+  gap: 3px;
+  margin: 0; padding: 0; border: 0; background: none;
   color: var(--accent);
   font: inherit; font-size: 13px; font-weight: 600;
   cursor: pointer;
-  display: none;
 }
-.card.is-clamped .card-more { display: inline; }
+.card-more::after { content: "›"; font-size: 1.15em; line-height: 0; }
+.card-more:hover { text-decoration: underline; }
+.card.is-clamped .card-more { display: inline-flex; }
 
 /* Add-to-reserve-list button on cards */
 .cart-add {
@@ -409,13 +415,20 @@ body.lb-open { overflow: hidden; }
   flex-direction: column;
   width: 100%;
   max-width: 560px;
-  max-height: 88vh;
+  max-height: 92vh;
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: 0 12px 40px rgba(0,0,0,.28);
   overflow: hidden;
 }
-.lb--media .lb-card { max-width: min(94vw, 1100px); max-height: 94vh; }
+.lb--media .lb-card { max-width: 1100px; }
+.lb-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
 .lb-close {
   position: absolute;
   top: 10px;
@@ -504,21 +517,16 @@ body.lb-open { overflow: hidden; }
   flex-direction: column;
   gap: 8px;
   padding: 16px 18px 18px;
-  min-height: 0;
-  flex: 1;
+  flex: none;
 }
-.lb--media .lb-info { flex: none; max-height: 42vh; }
 .lb-caption { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--ink); padding-right: 34px; }
 .lb-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .lb-desc {
   margin: 0;
-  min-height: 0;
-  overflow-y: auto;
   font-size: 14px;
   line-height: 1.55;
   color: #52555c;
   white-space: pre-wrap;
-  overscroll-behavior: contain;
 }
 .lb-desc[hidden] { display: none; }
 
