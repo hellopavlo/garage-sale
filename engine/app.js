@@ -443,6 +443,7 @@
       var cb = opt.querySelector(".cat-check");
       var n = counts[cb.value] || 0;
       opt.querySelector(".cat-opt-count").textContent = n;
+      opt.hidden = n === 0 && !cb.checked;
       opt.classList.toggle("cat-opt-empty", n === 0);
     });
   }
@@ -640,11 +641,16 @@
   }
 
   function priceHTML(it) {
-    var html = formatPrice(it);
+    var html = formatPrice(it) + unitSuffix(it);
     if (it.fullPriceNum != null && it.fullPriceNum > 0) {
-      html += ' <s class="card-full">' + (state.config.currency || "$") + fmtNum(it.fullPriceNum) + "</s>";
+      html += '<s class="card-full">' + (state.config.currency || "$") + fmtNum(it.fullPriceNum) + "</s>";
     }
     return html;
+  }
+
+  function unitSuffix(it) {
+    return (it.quantity && it.quantity > 1 && it.priceNum != null && it.priceNum > 0)
+      ? '<span class="card-unit">each</span>' : "";
   }
 
   function conditionClass(c) {
