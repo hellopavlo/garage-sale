@@ -428,7 +428,7 @@
     writeURL(nav);
   }
 
-  // "Read more" only shows when the 2-line description is actually truncated.
+  // "Read more" only shows when the 3-line description is actually truncated.
   function markClamped() {
     Array.prototype.forEach.call(els.grid.querySelectorAll(".card"), function (cardEl) {
       var d = cardEl.querySelector(".card-desc");
