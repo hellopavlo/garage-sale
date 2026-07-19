@@ -332,11 +332,21 @@
     return cartParam != null;
   }
 
+  // Params that actually change the grid — everything except the modal and cart.
+  function gridSig(p) {
+    return ["q", "v", "s", "c", "p"].map(function (k) { return p.get(k) || ""; }).join("\x1f");
+  }
+
   function onPopState() {
     var p = paramsFromURL();
     if (!p) return;
-    syncFiltersFromURL(p);
-    render("none");
+    // Only rebuild the grid when a grid-affecting param changed. A modal-only
+    // change (opening/closing the fullscreen card via ?item=) must leave the
+    // grid DOM intact, so the focus-return target and scroll position survive.
+    if (gridSig(p) !== gridSig(currentParams())) {
+      syncFiltersFromURL(p);
+      render("none");
+    }
     if (lb) lb.applyURL(p); // open/close the fullscreen card to match ?item=
   }
 
@@ -815,7 +825,7 @@
     root.className = "lb"; root.hidden = true;
     root.innerHTML =
       '<div class="lb-backdrop"></div>' +
-      '<div class="lb-card" role="dialog" aria-modal="true" aria-label="Item details">' +
+      '<div class="lb-card" role="dialog" aria-modal="true" aria-labelledby="lb-caption">' +
         '<button class="lb-close" type="button" aria-label="Close (Esc)"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button>' +
         '<div class="lb-scroll">' +
         '<div class="lb-media">' +
@@ -826,7 +836,7 @@
           '<span class="lb-zoomhint" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>' +
         '</div>' +
         '<div class="lb-info">' +
-          '<h2 class="lb-caption"></h2>' +
+          '<h2 class="lb-caption" id="lb-caption"></h2>' +
           '<div class="lb-meta"></div>' +
           '<p class="lb-desc"></p>' +
         '</div>' +
@@ -849,29 +859,46 @@
 
     var cur = { item: null, index: 0 }, lastFocus = null;
     var hasOwnEntry = false; // true when this card was opened by a click that pushed a history entry
+    var siteTitle = document.title; // restored when the card closes
+    var scrollLockY = 0; // background scroll offset, frozen while the card is open
     var scale = 1, tx = 0, ty = 0, gStart = null, lastTap = 0;
 
     // Show/hide the DOM only — no URL or history side effects.
     function reveal(item, index) {
-      if (root.hidden) lastFocus = document.activeElement;
+      var opening = root.hidden;
+      if (opening) { lastFocus = document.activeElement; scrollLockY = window.pageYOffset || 0; }
       cur.item = item; cur.index = index || 0;
       show(); root.hidden = false;
-      document.body.classList.add("lb-open"); closeBtn.focus();
+      // Reflect the item in the title so bookmarked/shared/history entries for
+      // ?item= read as the item, not the generic site name.
+      document.title = item.name + " – " + siteTitle;
+      // Freeze the background at its current scroll position (see .lb-open CSS).
+      if (opening) document.body.style.top = -scrollLockY + "px";
+      document.body.classList.add("lb-open");
+      closeBtn.focus({ preventScroll: true }); // don't yank the background scroll on open
     }
     function hideUI() {
       if (root.hidden) return;
       root.hidden = true; document.body.classList.remove("lb-open");
+      document.body.style.top = "";
+      void document.body.offsetHeight; // force reflow so the grid's full height is back before we scroll
+      window.scrollTo(0, scrollLockY); // restore the exact pre-open scroll position
+      document.title = siteTitle;
       img.removeAttribute("src");
-      if (lastFocus && lastFocus.focus) lastFocus.focus();
+      // preventScroll: we've already restored the exact scroll position above;
+      // don't let focus-return nudge it toward the trigger element.
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
     }
 
     // User opened the card (card/photo/"Read more" click): give it its own
     // history entry and a shareable ?item= URL, layered on the active filters.
     function open(item, index) {
-      reveal(item, index);
+      // Push the history entry while the page is still scrolled normally, so the
+      // entry we return to records the real scroll offset — then freeze the page.
       state.lbItem = item.id;
       hasOwnEntry = true;
       writeURL("push");
+      reveal(item, index);
     }
 
     // User dismissed the card (X / Esc / backdrop / swipe-down). Route the close

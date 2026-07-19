@@ -398,7 +398,9 @@ button.card-media:hover img { transform: scale(1.03); }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }
 
 /* Detail overlay — card-styled modal */
-body.lb-open { overflow: hidden; }
+/* Freeze the page in place while the card is open (top offset set inline to the
+   captured scroll position) so opening/closing never shifts the grid. */
+body.lb-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 .lb {
   position: fixed;
   inset: 0;
