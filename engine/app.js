@@ -20,6 +20,7 @@
     view: "available", // "available" | "hidden" (reserved + sold)
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
+    lbItem: null, // id of the item shown in the fullscreen card, mirrored to ?item=
   };
 
   var els = {};
@@ -76,6 +77,7 @@
         if (!booted) {
           var hadCartParam = readURL(); // apply shareable state on first load
           booted = true;
+          lb.applyURL(paramsFromURL()); // deep-link: open ?item= before the first render, so its URL-write keeps the param
           render();
           if (hadCartParam && cart.size()) cart.open();
         } else {
@@ -335,6 +337,7 @@
     if (!p) return;
     syncFiltersFromURL(p);
     render("none");
+    if (lb) lb.applyURL(p); // open/close the fullscreen card to match ?item=
   }
 
   function currentParams() {
@@ -344,6 +347,7 @@
     if (state.sort !== DEFAULT_SORT) p.set("s", state.sort);
     if (state.activeCategories.size) p.set("c", Array.from(state.activeCategories).join(","));
     if (state.page > 1) p.set("p", String(state.page));
+    if (state.lbItem) p.set("item", state.lbItem);
     if (cart && cart.size()) p.set("cart", cart.ids().join(","));
     return p;
   }
@@ -844,18 +848,62 @@
     var info = root.querySelector(".lb-info");
 
     var cur = { item: null, index: 0 }, lastFocus = null;
+    var hasOwnEntry = false; // true when this card was opened by a click that pushed a history entry
     var scale = 1, tx = 0, ty = 0, gStart = null, lastTap = 0;
 
-    function open(item, index) {
-      cur.item = item; cur.index = index || 0; lastFocus = document.activeElement;
+    // Show/hide the DOM only — no URL or history side effects.
+    function reveal(item, index) {
+      if (root.hidden) lastFocus = document.activeElement;
+      cur.item = item; cur.index = index || 0;
       show(); root.hidden = false;
       document.body.classList.add("lb-open"); closeBtn.focus();
     }
-    function close() {
+    function hideUI() {
+      if (root.hidden) return;
       root.hidden = true; document.body.classList.remove("lb-open");
       img.removeAttribute("src");
       if (lastFocus && lastFocus.focus) lastFocus.focus();
     }
+
+    // User opened the card (card/photo/"Read more" click): give it its own
+    // history entry and a shareable ?item= URL, layered on the active filters.
+    function open(item, index) {
+      reveal(item, index);
+      state.lbItem = item.id;
+      hasOwnEntry = true;
+      writeURL("push");
+    }
+
+    // User dismissed the card (X / Esc / backdrop / swipe-down). Route the close
+    // through history so Back and explicit-close converge: pop our pushed entry
+    // when we have one, otherwise (deep-link / forward) just strip ?item=.
+    function requestClose() {
+      if (root.hidden) return;
+      if (hasOwnEntry) {
+        hasOwnEntry = false;
+        history.back(); // popstate → applyURL() performs the actual hide
+      } else {
+        hideUI();
+        state.lbItem = null;
+        writeURL("replace");
+      }
+    }
+
+    // Reconcile the card to the URL — used on deep-link load and back/forward.
+    // The URL is already authoritative here, so this never writes history.
+    function applyURL(p) {
+      var id = p && p.get("item");
+      var item = id ? state.byId[id] : null;
+      if (item) {
+        state.lbItem = item.id;
+        hasOwnEntry = false; // reached via history/deep-link, nothing of ours to pop
+        if (root.hidden || (cur.item && cur.item.id !== item.id)) reveal(item, 0);
+      } else {
+        state.lbItem = null;
+        hideUI();
+      }
+    }
+    var close = requestClose; // internal handlers dismiss via the history-aware path
     function detailMeta(item) {
       var html = '<span class="card-price">' + priceHTML(item) + "</span>";
       if (item.condition) html += '<span class="card-condition ' + conditionClass(item.condition) + '">' + escapeHTML(item.condition) + "</span>";
@@ -985,7 +1033,7 @@
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
-    return { open: open };
+    return { open: open, applyURL: applyURL };
   }
 
   /* ---------- icons + clipboard ---------- */
