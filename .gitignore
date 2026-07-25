@@ -9,3 +9,6 @@ index.php
 
 # Local-only tools — never published (public repo)
 tools/
+
+# Local engine copy for offline testing (symlink to ../sale-engine/engine)
+engine-local

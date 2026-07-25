@@ -9,3 +9,13 @@ source).
 
 Local-only helper (git-ignored): `tools/optimize-images.py` resizes originals in
 `assets/images/` into the `web/` + `thumb/` copies the site serves.
+
+## Local development
+
+The engine loads from the hosted copy in production and from a local
+`engine-local/` copy on `*.local` hosts. To test engine edits locally, symlink it
+once (git-ignored; falls back to hosted if absent):
+
+```sh
+ln -s ../sale-engine/engine engine-local
+```

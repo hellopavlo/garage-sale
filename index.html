@@ -7,8 +7,25 @@
   <meta name="description" content="Browse and reserve items from our sale — furniture, electronics, appliances, and more." />
   <link rel="canonical" href="https://sale.hellopavlo.com/" />
   <link rel="icon" href="favicon.ico" sizes="any" />
-  <!-- Shared engine (hosted): github.com/hellopavlo/sale-engine -->
-  <link rel="stylesheet" href="https://hellopavlo.github.io/sale-engine/engine/styles.css" />
+  <!-- Engine loader: production loads the hosted shared engine
+       (github.com/hellopavlo/sale-engine); *.local hosts load the local copy via
+       the gitignored engine-local/ symlink, falling back to hosted if it's absent. -->
+  <script>
+    (function () {
+      var HOSTED = "https://hellopavlo.github.io/sale-engine/engine/";
+      var h = location.hostname;
+      var dev = h === "localhost" || h === "127.0.0.1" || /\.local$/.test(h);
+      var base = dev ? "engine-local/" : HOSTED;
+      var link = document.createElement("link");
+      link.rel = "stylesheet"; link.href = base + "styles.css";
+      if (dev) link.onerror = function () { console.warn("[engine] engine-local/styles.css not found — using hosted"); var f = document.createElement("link"); f.rel = "stylesheet"; f.href = HOSTED + "styles.css"; document.head.appendChild(f); };
+      document.head.appendChild(link);
+      var s = document.createElement("script");
+      s.src = base + "app.js";
+      if (dev) s.onerror = function () { console.warn("[engine] engine-local/app.js not found — using hosted"); var f = document.createElement("script"); f.src = HOSTED + "app.js"; document.head.appendChild(f); };
+      document.head.appendChild(s);
+    })();
+  </script>
   <link rel="stylesheet" href="data/theme.css" />
 </head>
 <body>
@@ -63,7 +80,5 @@
   <p id="result-count" class="wrap result-count" aria-live="polite"></p>
   <main id="grid" class="wrap grid"></main>
 
-  <!-- Shared engine (hosted): github.com/hellopavlo/sale-engine -->
-  <script src="https://hellopavlo.github.io/sale-engine/engine/app.js"></script>
 </body>
 </html>
