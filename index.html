@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Garage Sale</title>
+  <meta name="description" content="Browse and reserve items from our sale — furniture, electronics, appliances, and more." />
+  <link rel="canonical" href="https://sale.hellopavlo.com/" />
   <link rel="icon" href="favicon.ico" sizes="any" />
   <!-- Shared engine (hosted): github.com/hellopavlo/sale-engine -->
   <link rel="stylesheet" href="https://hellopavlo.github.io/sale-engine/engine/styles.css" />
@@ -17,6 +19,10 @@
       <p id="sale-contact" class="contact"></p>
     </div>
   </header>
+
+  <noscript>
+    <p style="text-align:center;padding:24px;">This sale listing needs JavaScript enabled to load items.</p>
+  </noscript>
 
   <div class="controls-bar">
     <div class="wrap toolbar">
@@ -55,8 +61,7 @@
   </div>
 
   <p id="result-count" class="wrap result-count" aria-live="polite"></p>
-  <main id="grid" class="wrap grid" aria-live="polite"></main>
-  <nav id="pager" class="wrap pager" aria-label="Pagination"></nav>
+  <main id="grid" class="wrap grid"></main>
 
   <!-- Shared engine (hosted): github.com/hellopavlo/sale-engine -->
   <script src="https://hellopavlo.github.io/sale-engine/engine/app.js"></script>
