@@ -12,3 +12,6 @@ tools/
 
 # Local engine copy for offline testing (symlink to ../sale-engine/engine)
 engine-local
+
+# Browser-testing artifacts (playwright-cli screenshots/snapshots)
+.playwright-cli/
