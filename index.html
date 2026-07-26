@@ -10,26 +10,27 @@
   <meta name="description" content="Browse and reserve items from our sale — furniture, electronics, appliances, and more." />
   <link rel="canonical" href="https://sale.hellopavlo.com/" />
   <link rel="icon" href="favicon.ico" sizes="any" />
-  <!-- Engine loader: production loads the hosted shared engine
-       (github.com/hellopavlo/sale-engine); *.local hosts load the local copy via
-       the gitignored engine-local/ symlink, falling back to hosted if it's absent. -->
+  <!-- Engine styles: a static, render-blocking link (hosted in production) so the
+       initial HTML paints already-styled and doesn't reflow into place (avoids CLS).
+       The loader swaps it to the local copy on *.local hosts and injects the script. -->
+  <link id="engine-css" rel="stylesheet" href="https://hellopavlo.github.io/sale-engine/engine/styles.css" />
+  <link rel="stylesheet" href="data/theme.css" />
   <script>
     (function () {
       var HOSTED = "https://hellopavlo.github.io/sale-engine/engine/";
       var h = location.hostname;
       var dev = h === "localhost" || h === "127.0.0.1" || /\.local$/.test(h);
-      var base = dev ? "engine-local/" : HOSTED;
-      var link = document.createElement("link");
-      link.rel = "stylesheet"; link.href = base + "styles.css";
-      if (dev) link.onerror = function () { console.warn("[engine] engine-local/styles.css not found — using hosted"); var f = document.createElement("link"); f.rel = "stylesheet"; f.href = HOSTED + "styles.css"; document.head.appendChild(f); };
-      document.head.appendChild(link);
+      if (dev) {
+        var css = document.getElementById("engine-css");
+        css.onerror = function () { css.onerror = null; console.warn("[engine] engine-local/styles.css not found — using hosted"); css.href = HOSTED + "styles.css"; };
+        css.href = "engine-local/styles.css";
+      }
       var s = document.createElement("script");
-      s.src = base + "app.js";
+      s.src = (dev ? "engine-local/" : HOSTED) + "app.js";
       if (dev) s.onerror = function () { console.warn("[engine] engine-local/app.js not found — using hosted"); var f = document.createElement("script"); f.src = HOSTED + "app.js"; document.head.appendChild(f); };
       document.head.appendChild(s);
     })();
   </script>
-  <link rel="stylesheet" href="data/theme.css" />
 </head>
 <body>
   <header class="site-header">
